@@ -1,0 +1,57 @@
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// โมเดลสำหรับสถานที่ (เช่น อาคาร)
+model Location {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique // ชื่อสถานที่ไม่ซ้ำกัน
+  rooms Room[]  // สถานที่หนึ่งมีได้หลายห้อง
+
+  @@map("locations") // ตั้งชื่อตารางใน DB
+}
+
+// โมเดลสำหรับห้อง
+model Room {
+  id          Int       @id @default(autoincrement())
+  name        String
+  capacity    Int       // ความจุ
+  facilities  String[]  // สิ่งอำนวยความสะดวก (เก็บเป็น Array ของ String)
+  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  locationId  Int
+  bookings    Booking[]
+
+  @@map("rooms")
+}
+
+// โมเดลสำหรับการจอง
+model Booking {
+  id        Int      @id @default(autoincrement())
+  userName  String
+  userPhone String
+  userEmail String?  // อีเมลไม่บังคับ
+  date      DateTime @db.Date // เก็บเฉพาะวันที่
+  startTime String   // เวลาเริ่มต้น เช่น "09:00"
+  endTime   String   // เวลาสิ้นสุด เช่น "11:00"
+  status    Status   @default(PENDING) // สถานะการจอง
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId    Int
+
+  @@map("bookings")
+}
+
+// Enum สำหรับสถานะการจอง
+enum Status {
+  PENDING   // รอการอนุมัติ
+  APPROVED  // อนุมัติแล้ว
+  REJECTED  // ไม่อนุมัติ
+}
